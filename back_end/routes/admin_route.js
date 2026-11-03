@@ -13,14 +13,6 @@ router.delete("/deleteuser/:id",async(req,res)=>{
     }else{
     res.send("no user found");
     }
-
-
-
-
-
-
-
-    
 });
 router.get("/viewquestion",(req,res)=>{
     res.send("view question route");
