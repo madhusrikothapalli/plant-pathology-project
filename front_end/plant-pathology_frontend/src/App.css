@@ -291,6 +291,42 @@
   padding: 4px 8px;
 }
 
+.history-section {
+  width: min(1120px, 100%);
+  margin: 48px auto 0;
+}
+
+.history-section h2 {
+  font-size: 22px;
+}
+
+.history-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.history-section li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+}
+
+.history-section li span {
+  font-weight: 750;
+}
+
+.history-section li small {
+  color: var(--muted);
+}
+
 /* Responsive Design */
 
 @media (max-width: 900px) {

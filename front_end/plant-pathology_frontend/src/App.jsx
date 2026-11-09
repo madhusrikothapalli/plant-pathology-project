@@ -4,22 +4,28 @@ import Header from './components/Header'
 import Footer from  './components/Footer'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 function App() {
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState('')
   const [result, setResult] = useState(null)
   const [health, setHealth] = useState(null)
+  const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const inputRef = useRef(null)
 
   useEffect(() => {
     fetch(`${API_URL}/api/health`)
-      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((response) => response.json())
       .then(setHealth)
       .catch(() => setHealth({ status: 'offline' }))
+
+    fetch(`${API_URL}/api/predictions`)
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then(setHistory)
+      .catch(() => setHistory([]))
   }, [])
 
   useEffect(() => () => {
@@ -30,6 +36,10 @@ function App() {
     if (!selected) return
     if (!selected.type.startsWith('image/')) {
       setError('Please choose a JPG, PNG, or WebP image.')
+      return
+    }
+    if (selected.size > 10 * 1024 * 1024) {
+      setError('Choose an image that is 10 MB or smaller.')
       return
     }
     if (preview) URL.revokeObjectURL(preview)
@@ -53,9 +63,10 @@ function App() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'Prediction failed.')
       setResult(data)
+      setHistory((previous) => [data, ...previous].slice(0, 20))
     } catch (requestError) {
       setError(requestError.message === 'Failed to fetch'
-        ? 'Cannot reach the FastAPI server. Start it on port 8000 and try again.'
+        ? 'Cannot reach the API. Start the backend on port 3000 and try again.'
         : requestError.message)
     } finally {
       setLoading(false)
@@ -70,12 +81,16 @@ return (
         <div className="hero-copy">
           <span className="eyebrow">AI plant health assistant</span>
           <h1>Spot plant diseases before they spread.</h1>
-          <p>Upload a clear leaf photo and get an instant dataset-based assessment with care guidance.</p>
+          <p>Upload a clear leaf photo for an assessment from your connected plant disease model.</p>
           <div className="status-line">
-            <span className={`status-dot ${health?.status === 'ok' ? 'online' : ''}`} />
-            {health?.status === 'ok'
-              ? `${health.classes_loaded} classes ready · ${health.images_indexed} images indexed`
-              : health?.status === 'offline' ? 'API offline' : 'Connecting to API...'}
+            <span className={`status-dot ${health?.database === 'connected' && health?.model === 'configured' ? 'online' : ''}`} />
+            {health?.status === 'offline'
+              ? 'API offline'
+              : health?.database === 'connected' && health?.model === 'configured'
+                ? 'Database connected · disease model ready'
+                : health
+                  ? `Database ${health.database} · disease model ${health.model === 'configured' ? 'ready' : 'not configured'}`
+                  : 'Connecting to API...'}
           </div>
         </div>
 
@@ -137,6 +152,19 @@ return (
           )}
         </div>
       </section>
+      {history.length > 0 && (
+        <section className="history-section" aria-label="Recent assessments">
+          <h2>Recent assessments</h2>
+          <ul>
+            {history.map((item) => (
+              <li key={item.id}>
+                <span>{item.name}</span>
+                <small>{item.confidence}% confidence · {item.severity}</small>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
 
     <Footer />
